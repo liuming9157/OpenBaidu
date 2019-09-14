@@ -31,9 +31,9 @@ class App extends Controller
     public function getTicket()
     {
         $encrypt      = cache('encryptedTicket')['Encrypt']; //加密信息
-        $descryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
-        $descryptData = $descryptUtil->decrypt($encrypt); //对数据解密
-        $ticket       = json_decode($descryptData)->Ticket; //获取ticket
+        $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
+        $decryptData = $decryptUtil->decrypt($encrypt); //对数据解密
+        $ticket       = json_decode($decryptData)->Ticket; //获取ticket
         return $ticket;
     }
     /**
