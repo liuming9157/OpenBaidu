@@ -9,10 +9,10 @@ class App extends Controller{
 	private $redirect_uri='';//授权后回调URI;
 	private $base_uri='https://openapi.baidu.com/';//百度接口基础URI
 
-	public function _construct($config=[]){
+	public function __construct($config=[]){
 		$this->encodingAesKey=$config['encodingAesKey'];
 		$this->client_id=$config['client_id'];
-		$this->redict_uri=$config['redirect_uri'];
+		$this->redirect_uri=$config['redirect_uri'];
 	}
 
 	/**
@@ -23,11 +23,11 @@ class App extends Controller{
 	 **/
 	public function getTicket()
 	{
-		$encrypt=cache('encrypt')['Encrypt'];//加密信息
+		$encrypt=cache('encryptedTicket')['Encrypt'];//加密信息
 		$descryptUtil=new AesDecryptUtil($this->encodingAesKey);//解密工具
 		$descryptData=$descryptUtil->decrypt($encrypt);//对数据解密
 		$ticket=json_decode($descryptData)->Ticket;//获取ticket
-		echo $ticket;
+		return $ticket;
 	}
 	/**
 	 * 获取第三方平台AccessToken
@@ -49,8 +49,14 @@ class App extends Controller{
 
 		]);
 		$responseData=$response->getBody()->getContents();//百度返回信息
-		$token=json_decode($responseData)->data->access_token;//对返回信息进行处理并获取token
-		echo $token;
+		$responseData=json_decode($responseData);
+		if($responseData->errno==0){
+			$token=json_decode($responseData)->data->access_token;//对返回信息进行处理并获取token
+		return $token;
+		}else{
+			return $resonose->msg;
+		}
+		
 
 	}
 	/**
@@ -74,7 +80,7 @@ class App extends Controller{
 		]);
 		$responseData=$response->getBody()->getContents();//百度返回信息
 		$pre_auth_code=json_decode($responseData)->data->pre_auth_code;//对返回信息进行处理并获取token
-		echo $pre_auth_code;
+		return $pre_auth_code;
 	}
 	/**
 	 * 授权跳转
@@ -82,9 +88,21 @@ class App extends Controller{
 	 * @return void
 	 * @author 
 	 **/
-	public function redirect()
+	public function goAuthPage()
 	{
-		header('location:https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id='.$this->client_id.'&redirect_uri='.$this->redirect_uri.'&pre_auth_code='.$this->getPreAuthCode());
+		if(!$this->client_id){
+			echo '无client_id';
+			return false;
+		}
+		if(!$this->redirect_uri){
+			echo '无redirect_uri';
+			return false;
+		}
+		if(!$this->getPreAuthCode()){
+			echo '无预授权码pre_auth_code';
+			return false;
+		}
+		$this->success('稍后请扫码授权','https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id='.$this->client_id.'&redirect_uri='.$this->redirect_uri.'&pre_auth_code='.$this->getPreAuthCode());
 
 	}
 	/**
@@ -97,7 +115,7 @@ class App extends Controller{
 	{
 		$param=$this->request->param();
 		$auth_code=$param->authorization_code;
-		echo $auth_code;
+		return $auth_code;
 
 	}
 	/**
@@ -122,6 +140,30 @@ class App extends Controller{
 		]);
 		$responseData=$response->getBody()->getContents();//百度返回信息
 		$access_token=json_decode($responseData)->access_token;//对返回信息进行处理并获取token
-		echo $access_token;//注意，入需refresh_token请从responseData中获取
+		return $access_token;//注意，入需refresh_token请从responseData中获取
+	}
+	/**
+	 * 获取小程序基础信息
+	 *
+	 * @return void
+	 * @author 
+	 **/
+	public function getMpInfo()
+	{
+		$client=new Client([
+              'base_uri'=>$this->base_uri
+		]);
+		//请求百度接口
+		$response=$client->get('/rest/2.0/smartapp/app/info',[
+			'query'=>[
+				'access_token'=>$this->getMpToken()
+
+			]
+
+		]);
+		$responseData=$response->getBody()->getContents();//百度返回信息
+		$mpInfo=json_decode($responseData);//对返回信息进行处理
+		return $mpInfo;//具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
+
 	}
 }
