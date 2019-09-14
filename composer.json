@@ -1,0 +1,21 @@
+{
+    "name": "jackliu/baidu",
+    "description": "the baidu smartprogram openplatform",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^6.3"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jack Liu",
+            "email": "liuming@mzsat.cn"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload":{
+        "psr-4": {
+            "baidu\\": "src/"
+        }
+    },
+}
