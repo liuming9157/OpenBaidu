@@ -207,7 +207,7 @@ class App extends Controller
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
         $access_token = json_decode($responseData)->access_token; //对返回信息进行处理并获取token
-        return $access_token; //注意，入需refresh_token请从responseData中获取
+        return $access_token; //注意，该令牌默认有效期是1小时，如需refresh_token请从responseData中获取
     }
     /**
      * 获取小程序基础信息
@@ -233,4 +233,114 @@ class App extends Controller
         return $mpInfo; //具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
 
     }
+     /**
+     * 上传小程序代码
+     * @param $template_id int
+     * @param $ext_json string
+     * @param $user_version string
+     * @param $user_desc string
+     * @return string
+     * @author
+     **/
+    public function uploadCode($template_id,$ext_json,$user_version,$user_desc)
+    {
+        $client = new Client([
+            'base_uri' => $this->base_uri,
+        ]);
+        //请求百度接口
+        $response = $client->post('/rest/2.0/smartapp/package/upload', [
+            'data' => [
+                'access_token' => $this->getMpToken(),
+                'template_id'=>$template_id,//模板ID
+                'ext_json'=>$ext_json,//自定义配置
+                'user_version'=>$user_version,//代码版本号
+                'user_desc'=>$user_desc//代码描述
+
+
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; 
+
+    }
+     /**
+     * 提交审核
+     * @param $package_id string
+     * @param $content string
+     * @param $remark string
+     * @return string
+     * @author
+     **/
+    public function submitAudit($package_id,$content='',$remark='')
+    {
+        $client = new Client([
+            'base_uri' => $this->base_uri,
+        ]);
+        //请求百度接口
+        $response = $client->post('/rest/2.0/smartapp/package/submitaudit', [
+            'data' => [
+                'access_token' => $this->getMpToken(),
+                'package_id'=>$package_id,//包ID
+                'content'=>$content,//送审描述
+                'remark'=>$remark,//送审备注
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
+    }
+     /**
+     * 发布代码
+     * @param $package_id string
+     * @return string
+     * @author
+     **/
+    public function releaseCode($package_id)
+    {
+        $client = new Client([
+            'base_uri' => $this->base_uri,
+        ]);
+        //请求百度接口
+        $response = $client->post('/rest/2.0/smartapp/package/release', [
+            'data' => [
+                'access_token' => $this->getMpToken(),
+                'package_id'=>$package_id,//包ID
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
+    }
+     /**
+     * 修改服务器域名，直接调用此接口，可自动修改授权小程序服务器域名
+     * @param $access_token
+     * @return string
+     * @author
+     **/
+    public function modifyDomain()
+    {
+        $client = new Client([
+            'base_uri' => $this->base_uri,
+        ]);
+        //请求百度接口
+        $response = $client->post('/rest/2.0/smartapp/app/modifydomain', [
+            'data' => [
+                'access_token' => $this->getMpToken(),
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
+    }
+
+
 }

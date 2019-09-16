@@ -52,7 +52,18 @@ $app->getMpInfo();//获取授权小程序的信息
 2. token varchar(50) 
 3. create_time int(10)  
 4. expires _in int(10) 
-
+### 关于代码提交功能接口的使用说明
+代码提交时，需要调用以下三个接口  
+1. 代码上传 `$app->uploadCode()`  
+此接口需要用户填写三个数据，分别是    
+`$ext_json`第三方配置信息  
+`user_version`代码版本号    
+`user_desc`代码描述  
+还有一个字段由系统获取，为`$template_id`模板ID  
+2. 提交审核`$app->submitAudit()`  
+提交审核后需要等待一天左右，百度会推送审核结果。审核结果的获取，可以参考`https://smartprogram.baidu.com/docs/develop/third/apppage/#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%A0%B8%E7%8A%B6%E6%80%81%E6%8E%A8%E9%80%81`  
+3. 代码发布`$app->relaseCode()`
+**在获得授权后，提交代码前，就应该调用修改域名接口`$app->modifyDomain()`来修改小程序的业务域名**
 
 
 
