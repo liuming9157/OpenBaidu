@@ -7,8 +7,8 @@
 2. 本SDK依赖guzzle,故需通过composer安装  
 ### 使用方法
 参照`exmaple\Gate.php`中写法
-```
-###### 方法介绍  
+
+### 方法介绍  
 ```
 protected $config=[
     'encodingAesKey'=>'',//设置aesKey
@@ -36,7 +36,7 @@ $app->getMpInfo();//获取授权小程序的信息
 三是在跳转回调页内调用`getMpInfo()`方法
 
 ### 模式选择
-默认是调试模式，调试模式时每次都会请求AccessToken,生产模式时AccessToken和mpToken会存入数据库，只有生育有效期不到一天时才会重新请求。  
+默认是调试模式，调试模式时每次都会请求AccessToken,生产模式时tpToken和mpToken会存入数据库，只有剩余有效期不到一天时才会重新请求。  
 生产模式时，tp_token数据表字段如下；
 1. id int(10)   
 2. token varchar(50) 
