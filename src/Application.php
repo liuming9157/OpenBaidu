@@ -6,7 +6,7 @@ use GuzzleHttp\Client;
 use think\Controller;
 use think\Db;
 
-class App extends Controller
+class Application extends Controller
 {
     private $encodingAesKey = ''; //第三方平台AesKey
     private $client_id      = ''; //第三方平台appsecret;
@@ -21,6 +21,22 @@ class App extends Controller
         $this->redirect_uri   = $config['redirect_uri'];
         $this->debug          = $config['debug'] ?: true;
     }
+    /**
+     * 获取加密Ticket并缓存10分钟
+     *
+     * @return void
+     * @author
+     **/
+    public function serve()
+    {
+        echo 'success';
+        if($this->request->post('Nonce')){
+            $baiduTicket=$this->request->post('Encrypt');
+            cache('baiduTicket',$baiduTicket,600);
+        }
+        
+        
+    }
 
     /**
      * 解密并获取Ticket
@@ -30,22 +46,20 @@ class App extends Controller
      **/
     public function getTicket()
     {
-        $encrypt      = cache('encryptedTicket')['Encrypt']; //加密信息
+        $encrypt      = cache('baiduTicket'); //加密信息
         $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
         $decryptData = $decryptUtil->decrypt($encrypt); //对数据解密
         $ticket       = json_decode($decryptData)->Ticket; //获取ticket
         return $ticket;
     }
     /**
-     * 获取第三方平台AccessToken
+     * 直接从百度服务器获取第三方平台AccessToken
      *
      * @return void
      * @author
      **/
-    public function getAccessToken()
-    {
-        if ($this->debug == true) {
-            $client = new Client([
+    public function tpToken(){
+         $client = new Client([
                 'base_uri' => $this->base_uri,
             ]);
             //请求百度接口
@@ -65,61 +79,35 @@ class App extends Controller
             } else {
                 return $resonose->msg;
             }
+    }
+    /**
+     * 获取第三方平台AccessToken
+     *
+     * @return void
+     * @author
+     **/
+    public function getTpToken()
+    {
+        if ($this->debug == true) {
+            $this->tpToken();
         }
         if ($this->debug == false) {
-            $access_token = Db::name('access_token')->where('id', 1)->find();
+            $data = Db::name('tp_token')->where('type', 'baidu')->find();
             $now          = time();
             //数据库没有AccessToken时请求接口
-            if (!$access_token) {
-                $client = new Client([
-                    'base_uri' => $this->base_uri,
-                ]);
-                //请求百度接口
-                $response = $client->get('/public/2.0/smartapp/auth/tp/token', [
-                    'query' => [
-                        'client_id' => $this->client_id,
-                        'ticket'    => $this->getTicket(),
-
-                    ],
-
-                ]);
-                $responseData = $response->getBody()->getContents(); //百度返回信息
-                $responseData = json_decode($responseData);
-                if ($responseData->errno == 0) {
-                    $token = json_decode($responseData)->data->access_token; //对返回信息进行处理并获取token
-                    Db::name('access_token')->insert(['access_token' => $token, 'create_time' => $now, 'expires_in' => 2592000]); //将token存入数据库
-                    return $token;
-                } else {
-                    return $resonose->msg;
-                }
-
+            if (!$data) {
+               $token=$this->tpToken();
+               Db::name('tp_token')->insert(['token'=>$token,'type'=>'baidu','create_time'=>$now]);
+               return $token;
             }
-            if ($access_token) {
-                $remain_time = $now - $access_token->create_time; //计算token剩余有效期，小于1天时重新发起请求
+            if ($data) {
+                $remain_time = $data['create_time']+2592000-$now; //计算token剩余有效期，小于1天时重新发起请求
                 if ($remain_time < 86400) {
-                    $client = new Client([
-                        'base_uri' => $this->base_uri,
-                    ]);
-                    //请求百度接口
-                    $response = $client->get('/public/2.0/smartapp/auth/tp/token', [
-                        'query' => [
-                            'client_id' => $this->client_id,
-                            'ticket'    => $this->getTicket(),
-
-                        ],
-
-                    ]);
-                    $responseData = $response->getBody()->getContents(); //百度返回信息
-                    $responseData = json_decode($responseData);
-                    if ($responseData->errno == 0) {
-                        $token = json_decode($responseData)->data->access_token; //对返回信息进行处理并获取token
-                        Db::name('access_token')->where('id', 1)->update(['access_token' => $token, 'create_time' => $now, 'expires_in' => 2592000]); //将新token存入数据库
-                        return $token;
-                    } else {
-                        return $resonose->msg;
-                    }
+                    $token=$this->tpToken();
+                    Db::name('tp_token')->where('type','baidu')->update(['token'=>$token,'create_time'=>$now]);
+                     return $token;
                 } else {
-                    $token = $access_token->token;
+                    $token = $data['token'];
                     return $token;
                 }
             }
@@ -140,7 +128,7 @@ class App extends Controller
         //请求百度接口
         $response = $client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
             'query' => [
-                'access_token' => $this->getAccessToken(),
+                'access_token' => $this->getTpToken(),
 
             ],
 
@@ -186,12 +174,12 @@ class App extends Controller
 
     }
     /**
-     * 获取授权小程序AccessToken及RefreshToken
+     * 从百度服务器获取授权小程序AccessToken及RefreshToken
      * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
      * @return void
      * @author
      **/
-    public function getMpToken()
+    public function mpToken()
     {
         $client = new Client([
             'base_uri' => $this->base_uri,
@@ -199,15 +187,85 @@ class App extends Controller
         //请求百度接口
         $response = $client->get('/rest/2.0/oauth/token', [
             'query' => [
-                'access_token' => $this->getAccessToken(),
+                'access_token' => $this->getTpToken(),
                 'code'         => $this->getAuthCode(),
                 'grant_type'   => 'app_to_tp_authorization_code',
             ],
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
-        $access_token = json_decode($responseData)->access_token; //对返回信息进行处理并获取token
-        return $access_token; //注意，该令牌默认有效期是1小时，如需refresh_token请从responseData中获取
+        return $responseData;
+
+    }
+     /**
+     * 刷新授权小程序AccessToken
+     * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
+     * @return void
+     * @author
+     **/
+    public function refreshMpToken($refresh_token)
+    {
+        $client = new Client([
+            'base_uri' => $this->base_uri,
+        ]);
+        //请求百度接口
+        $response = $client->get('/rest/2.0/oauth/token', [
+            'query' => [
+                'access_token' => $this->getTpToken(),
+                'refresh_token'         => $refresh_token,
+                'grant_type'   => 'app_to_tp_refresh_token',
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        return $responseData;
+
+        
+    }
+    /**
+     * 获取授权小程序AccessToken及RefreshToken
+     * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
+     * @return void
+     * @author
+     **/
+    public function getMpToken($app_id='')
+    {
+        if ($this->debug == true) {
+            $responseData=$this->mpToken();   
+            $access_token = json_decode($responseData)->access_token; //对返回信息进行处理并获取token
+            return $access_token; //注意，该令牌默认有效期是1小时，如需refresh_token请从responseData中获取
+        }
+        if ($this->debug == false) {
+            $data = Db::name('mp_token')->where('type', 'baidu')->where('appid',$appid)->find();
+            $now          = time();
+            //数据库没有AccessToken时请求接口
+            if (!$data) {
+               $responseData=$this->tpToken();
+               $access_token = json_decode($responseData)->access_token;
+               $refresh_token = json_decode($responseData)->refresh_token;
+                $expires_in= json_decode($responseData)->expires_in;
+               Db::name('tp_token')->insert(['access_token'=>$access_token,'refresh_token'=>$refresh_token,'type'=>'baidu','expires_in'=>$expires_in,'create_time'=>$now]);
+               return $access_token;
+            }
+            if ($data) {
+                $create_time=$data['create_time'];
+                $expires_in=$data['expires_in'];
+                if ($create_time+$expires_in>=$now) {
+                    $refresh_token=$data['refresh_token'];
+                    $responseData=$this->refreshTpToken($refresh_token);
+                    $access_token= json_decode($responseData)->access_token;
+                    $refresh_token= json_decode($responseData)->refresh_token;
+                    $expires_in= json_decode($responseData)->expires_in;
+                    Db::name('tp_token')->where('type','baidu')->where('appid',$appid)->update(['access_token'=>$access_token,'refresh_token'=>$refresh_token,'expires_in'=>$expires_in]);
+                    return $access_token;
+
+                } else {
+                    $access_token=$data['access_token'];
+                    return $access_token;
+                }
+            }
+        }
+
     }
     /**
      * 获取小程序基础信息
@@ -217,19 +275,25 @@ class App extends Controller
      **/
     public function getMpInfo()
     {
+        $access_token=$this->getMpToken();
         $client = new Client([
             'base_uri' => $this->base_uri,
         ]);
         //请求百度接口
         $response = $client->get('/rest/2.0/smartapp/app/info', [
             'query' => [
-                'access_token' => $this->getMpToken(),
+                'access_token' => $access_token,
 
             ],
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
         $mpInfo       = json_decode($responseData); //对返回信息进行处理
+        $app_id=Db::name('mp_token')->where('access_token',$access_token)->where('type','baidu')->value('app_id');
+        if(!$app_id){
+            $app_id=$mpInfo->app_id;
+           Db::name('mp_token')->where('access_token',$access_token)->where('type','baidu')->update(['app_id'=>$app_id]); 
+        }
         return $mpInfo; //具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
 
     }
