@@ -1,5 +1,6 @@
 <?php
 namespace Openplatform\Baidu;
+use Exception;
 /**
  * Copyright (C) 2018 Baidu, Inc. All Rights Reserved.
  * 计算智能小程序第三方平台的消息签名接口
