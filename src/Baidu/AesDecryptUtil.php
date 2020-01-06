@@ -1,5 +1,6 @@
 <?php
 namespace Openplatform\Baidu;
+use Exception;
 /**
  * Copyright (C) 2018 Baidu, Inc. All Rights Reserved.
  * PHP AES 消息加解密

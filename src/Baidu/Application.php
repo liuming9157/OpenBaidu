@@ -77,7 +77,7 @@ class Application extends Controller
             $responseData = $response->getBody()->getContents(); //百度返回信息
             $responseData = json_decode($responseData);
             if ($responseData->errno == 0) {
-                $token = json_decode($responseData)->data->access_token; //对返回信息进行处理并获取token
+                $token = $responseData->data->access_token; //对返回信息进行处理并获取token
                 return $token;
             } else {
                 return $resonose->msg;
@@ -94,7 +94,7 @@ class Application extends Controller
     public function getPreAuthCode($tpToken)
     {
         //请求百度接口
-        $response = $client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
+        $response = $this->client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
             'query' => [
                 'access_token' => $tpToken,
 
@@ -114,11 +114,7 @@ class Application extends Controller
     public function goAuthPage($tpToken='')
     {
 
-        if (!$this->getPreAuthCode()) {
-            echo '无预授权码pre_auth_code';
-            return false;
-        }
-        $this->success('稍后请扫码授权', 'https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->getPreAuthCode($tpToken));
+        header( 'Location:https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->getPreAuthCode($tpToken));
 
     }
     /**
@@ -129,7 +125,7 @@ class Application extends Controller
      **/
     public function getAuthCode()
     {
-        $param     = $this->request->param();
+        $param     = Request::instance()->param();
         $auth_code = $param->authorization_code;
         return $auth_code;
 
@@ -154,6 +150,7 @@ class Application extends Controller
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData=json_decode($responseData);
         return $responseData;
 
     }
