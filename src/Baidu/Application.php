@@ -5,6 +5,7 @@ use Openplatform\Baidu\AesDecryptUtil;
 use GuzzleHttp\Client;
 use think\Controller;
 use think\Db;
+use think\Request;
 use think\Cache;
 
 class Application extends Controller
@@ -32,8 +33,8 @@ class Application extends Controller
      **/
     public function serve()
     {
-        if($this->request->has('Nonce','post')){
-            $baiduTicket=$this->request->post('Encrypt');
+        if(Request::instance()->has('Nonce','post')){
+            $baiduTicket=Reqeust::instance()->post('Encrypt');
             Cache::set('baiduTicket',$baiduTicket,600);
         }
         return 'success';
