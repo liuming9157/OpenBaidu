@@ -27,10 +27,10 @@ $app->getMpInfo();//获取授权小程序的信息
 
 **注意**
 以上各方法根据自己需要调用。事实上，在实际开发中，真正需要开发者调用的方法只需要四个（参照例子写法）：  
-一是接收ticket并缓存,需调用`serve()`方法   
-二是用户点击授权按钮时，跳转到授权页，此时调用`goAuthPage()`方法，调用此方法时需传入第三方平台的access_token,建议开发者将此令牌存入数据库; 
-
-三是在授权回调页获取小程序aceess_token并保存，此时在跳转回调页内调用`mpToken()`方法，  
+一是接收ticket并缓存,需调用`serve()`方法  
+二是获取第三方平台令牌并保存，调用tpToken方法     
+三是用户点击授权按钮时，跳转到授权页，此时调用`goAuthPage()`方法，调用此方法时需传入第三方平台的access_token,建议开发者将此令牌存入数据库; 
+四是在授权回调页获取小程序aceess_token并保存，此时在跳转回调页内调用`mpToken()`方法，  
 `注意：此方法返回的不是access_token，而是一个对象，该对象包含了access_token/refresh_token/expires_in`  
 
 ### 对access_token的处理
@@ -43,7 +43,8 @@ tp_token数据表字段如下；
 2. token varchar(50) 
 3. create_time int(10)  
 4. expires _in int(10)
-5. type varchat(50) 可选值：'weixin','baidu','ali','douyin','QQ'
+5. type varchat(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
+
 mp_token数据表字段如下：
 1. id int(10)   
 2. access_token varchar(50)  
@@ -61,7 +62,7 @@ mp_token数据表字段如下：
 还有一个字段由系统获取，为`$template_id`模板ID  
 2. 提交审核`$app->submitAudit()`  
 提交审核后需要等待一天左右，百度会推送审核结果。审核结果的获取，可以参考`https://smartprogram.baidu.com/docs/develop/third/apppage/#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%A0%B8%E7%8A%B6%E6%80%81%E6%8E%A8%E9%80%81`  
-3. 代码发布`$app->relaseCode()`
+3. 代码发布`$app->relaseCode()`  
 **在获得授权后，提交代码前，就应该调用修改域名接口`$app->modifyDomain()`来修改小程序的业务域名**
 
 
