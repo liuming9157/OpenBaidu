@@ -32,11 +32,12 @@ class Application extends Controller
      **/
     public function serve()
     {
-        echo 'success';
         if($this->request->post('Nonce')){
             $baiduTicket=$this->request->post('Encrypt');
             Cache::set('baiduTicket',$baiduTicket,600);
         }
+        return 'success';
+        
         
         
     }
@@ -109,14 +110,14 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function goAuthPage($tpToken)
+    public function goAuthPage($tpToken='')
     {
 
         if (!$this->getPreAuthCode()) {
             echo '无预授权码pre_auth_code';
             return false;
         }
-        $this->success('稍后请扫码授权', 'https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->getPreAuthCode(tpToken));
+        $this->success('稍后请扫码授权', 'https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->getPreAuthCode($tpToken));
 
     }
     /**
@@ -139,7 +140,7 @@ class Application extends Controller
      * @return object(acces_token,refresh_token,expires_in)
      * @author
      **/
-    public function mpToken($tpToken)
+    public function mpToken($tpToken='')
     {
        
         //请求百度接口
@@ -162,7 +163,7 @@ class Application extends Controller
      * @return object(access_token,refresh_token)
      * @author
      **/
-    public function refreshMpToken($refresh_token)
+    public function refreshMpToken($refresh_token='')
     {
       
         //请求百度接口
