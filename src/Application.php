@@ -1,7 +1,7 @@
 <?php
 namespace Openplateform;
-use Openplateform\baidu\Application as Baidu;
-use Openplateform\wechat\Application as Wechat;
+use Openplateform\Baidu\Application as Baidu;
+use Openplateform\Wechat\Application as Wechat;
 use Exception;
 class Application{
 	public function __construct(){
