@@ -1,12 +1,8 @@
-### 百度智能小程序第三方平台SDK  
-1. Application.php是主体文件，有注释。  
-2. AesDecryptUtil类的decrypt方法用来解密消息，根据百度提供的SDK有改写
-3. MsgSignatureUtil类的getMsgSignature方法用来验证消息签名，根据百度提供的SDK有改写。
-### 依赖
-1. 本SDK只能在ThinkPHP框架下使用  
-2. 本SDK依赖guzzle,故需通过composer安装  
+### 小程序第三方平台SDK  
+含百度、微信第三方平台
+ 
 ### 使用方法
-参照`exmaple\Gate.php`中写法
+参照`exmaple\Index.php`中写法
 
 ### 方法介绍  
 ```
