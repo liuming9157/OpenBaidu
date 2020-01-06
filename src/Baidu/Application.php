@@ -32,7 +32,7 @@ class Application extends Controller
      **/
     public function serve()
     {
-        if($this->request->post('Nonce')){
+        if($this->request->has('Nonce','post')){
             $baiduTicket=$this->request->post('Encrypt');
             Cache::set('baiduTicket',$baiduTicket,600);
         }
