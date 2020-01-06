@@ -33,8 +33,8 @@ class Application extends Controller
      **/
     public function serve()
     {
-        if(Request::instance()->has('Nonce','post')){
-            $baiduTicket=Reqeust::instance()->post('Encrypt');
+        if(Request::instance()->isPost()){
+            $baiduTicket=Request::instance()->post('Encrypt');
             Cache::set('baiduTicket',$baiduTicket,600);
         }
         return 'success';
