@@ -1,5 +1,5 @@
 <?php
-namespace baidu;
+namespace Openplatform\Baidu;
 /**
  * Copyright (C) 2018 Baidu, Inc. All Rights Reserved.
  * PHP AES 消息加解密

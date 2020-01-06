@@ -1,7 +1,7 @@
 <?php
 namespace app\baidu;
 use think\Controller;
-use baidu\Application;
+use Openplatform\Application;
 class Gate extends Controller{
 	protected $config=[
 		'encodingAesKey'=>'',
@@ -10,23 +10,42 @@ class Gate extends Controller{
 		'debug'=>false
 
 	];
-	protected $app=null;
+	protected $baidu=null;
+	protected $wechat=null;
 	public function _construct(){
-		$this->app=new Application($this->config);
+		$this->baidu=Application::Baidu($config);
 	}
 	/**
-	 * 小程序授权接收URL。
-	 * @return void
-	 * @author 
+	 * 平台接收ticket
 	 **/
-	public function authNotice(){
-		$this->app->serve();
+	public function notice(){
+		$this->baidu->serve();//这个方法会返回success
 	}
-	public function auth(){
-		$this->app->goAuthPage();
+	/**
+	 * 获取平台的access_token
+	 **/
+	public function getTpToken()
+	{
+		//我习惯将平台的access_token用tpToken表示，以便跟小程序的access_token区别
+		$tpToken=$this->baidu->tpToken();
+		//tpToken有效期为30天，建议获取后存入数据库，剩余有效期为一天时再重新获取
+
+
 	}
-	public function uri(){
-		$this->app->getMpInfo();
+	/**
+	 * 用户点击按钮跳转到授权页
+	 **/
+	public function auth($tpToken){
+		$this->app->goAuthPage($tpToken);
+	}
+	/**
+	 * 用户授权完成后在回调页获取小程序的access_token
+	 **/
+	public function getMpToken(){
+		$data=$this->baidu->getMpToken();
+		$access_token=$data->access_token;
+		$refresh_token=$data->refresh_token;
+		//小程序的access_token会反复调用，有效期为1小时，refresh_token有效期为10年，建议都存入数据库，每次调用access_token前先判断是否过期，如果过期就进行刷新。
 	}
 	/**
 	 * 小程序审核结果推送到第三方的消息与事件接收URL。
@@ -35,7 +54,7 @@ class Gate extends Controller{
 	 * @author 
 	 **/
 	public function msgNotice(){
-		$param=$this->request->param();
+		
 		//To to sth.
 	}
 }
