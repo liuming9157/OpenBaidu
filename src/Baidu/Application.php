@@ -234,6 +234,101 @@ class Application extends Controller
         return $mpInfo; //具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
 
     }
+    /**
+     * 获取模板列表
+     * @param mpToken
+     * @param page
+     * @param page_size
+     * @return object
+     * @author 
+     **/
+    public function templateList($mpToken,$page=1,$page_size=10)
+    {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/template/gettemplatelist', [
+            'query' => [
+                'access_token' => $mpToken,
+                'page'         =>$page,
+                'page_size'    =>$page_size
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $templateList       = json_decode($responseData); //对返回信息进行处理
+        return $templateList;
+    }
+    /**
+     * 删除模板
+     * @param mpToken
+     * @param template_id
+     * @return object
+     * @author 
+     **/
+    public function delTemplate($mpToken,$template_id)
+    {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/template/deltemplate', [
+            'form_params' => [
+                'access_token' => $mpToken,
+                'template_id'  =>$template_id,
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData       = json_decode($responseData); //对返回信息进行处理
+        return $responseData->msg;
+    }
+    /**
+     * 获取草稿列表
+     * @param mpToken
+     * @param page
+     * @param page_size
+     * @return object
+     * @author 
+     **/
+    public function draftList($mpToken,$page=1,$page_size=10)
+    {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/template/getdraftlist', [
+            'query' => [
+                'access_token' => $mpToken,
+                'page'         =>$page,
+                'page_size'    =>$page_size
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $draftList       = json_decode($responseData); //对返回信息进行处理
+        return $draftList;
+    }
+    /**
+     * 获取草稿至模板
+     * @param mpToken
+     * @param draft_id
+     * @param user_desc
+     * @return object
+     * @author 
+     **/
+    public function addTemplate($mpToken,$draft_id,$user_desc)
+    {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/template/gettemplatelist', [
+            'form_params' => [
+                'access_token' => $mpToken,
+                'draft_id'         =>$draft_id,
+                'user_desc'    =>$user_desc
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $template_id       = json_decode($responseData)->data->template_id; //对返回信息进行处理
+        return $template_id;
+    }
+
      /**
      * 上传小程序代码
      * @param $mpToken string
@@ -353,6 +448,58 @@ class Application extends Controller
         return $data->msg; //
 
     }
+    /**
+     * 获取二维码图片
+     * @param $mpToken
+     * @param $package_id
+     * @return string
+     * @author
+     **/
+    public function qrcode($mpToken,$package_id='',$size=200)
+    {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/app/qrcode', [
+            'query' => [
+                'access_token' => $mpToken,
+                'package_id'   => $package_id,
+                'size'         => $size        
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
+    }
+    /**
+     * 申请手机号权限
+     * @param $mpToken
+     * @param $reason int
+     * @param $used_scene int
+     * @param $scene_desc string
+     * @param $scene_demo string 图片链接地址，需调用图片上传接口获取
+     * @return success string
+     * @author
+     **/
+    public function mobile($mpToken,$reason=0,$used_scene=0,$scene_desc='test',$scene_demo='')
+    {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/app/apply/mobileauth', [
+            'form_params' => [
+                'access_token' => $mpToken,
+                'reason'       => $reason,
+                'used_scene'   => $used_scene,
+                'scene_desc'   => $scene_desc,
+                'scene_demo'   =>$scene_demo     
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
+    }
+
     /**
      * 验证签名
      *
