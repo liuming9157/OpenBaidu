@@ -2,6 +2,7 @@
 namespace Openplatform\Baidu;
 
 use Openplatform\Baidu\AesDecryptUtil;
+use Openplatform\Baidu\MsgSignatureUtil;
 use GuzzleHttp\Client;
 use think\Controller;
 use think\Db;
@@ -13,6 +14,7 @@ class Application extends Controller
     private $encodingAesKey = ''; //第三方平台AesKey
     private $client_id      = ''; //第三方平台appsecret;
     private $redirect_uri   = ''; //授权后回调URI;
+    private $token          = '';//消息验证token
     private $base_uri       = 'https://openapi.baidu.com/'; //百度接口基础URI
     private $client;
 
@@ -21,6 +23,7 @@ class Application extends Controller
         $this->encodingAesKey = $config['encodingAesKey'];
         $this->client_id      = $config['client_id'];
         $this->redirect_uri   = $config['redirect_uri'];
+        $this->token          = $config['token'];
         $this->client         = new Client([
                 'base_uri' => $this->base_uri,
             ]);
@@ -245,7 +248,7 @@ class Application extends Controller
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/upload', [
-            'data' => [
+            'form_params' => [
                 'access_token' => $mpToken,
                 'template_id'=>$template_id,//模板ID
                 'ext_json'=>$ext_json,//自定义配置
@@ -274,7 +277,7 @@ class Application extends Controller
         
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/submitaudit', [
-            'data' => [
+            'form_params' => [
                 'access_token' => $mpToken,
                 'package_id'=>$package_id,//包ID
                 'content'=>$content,//送审描述
@@ -298,7 +301,7 @@ class Application extends Controller
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/release', [
-            'data' => [
+            'form_params' => [
                 'access_token' => $mpToken,
                 'package_id'=>$package_id,//包ID
             ],
@@ -319,7 +322,7 @@ class Application extends Controller
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/app/modifydomain', [
-            'data' => [
+            'form_params' => [
                 'access_token' => $mpToken,
             ],
 
@@ -328,6 +331,27 @@ class Application extends Controller
         $data       = json_decode($responseData); //对返回信息进行处理
         return $data->msg; //
 
+    }
+    /**
+     * 验证签名
+     *
+     * @return boleen
+     * @author 
+     **/
+    public function check()
+    {
+        $token=$this->token;
+        $timestamp=Request::instance()->param('timestamp');
+        $nonce=Request::instance()->param('nonce');
+        $encrpt_msg=Request::instance()->param('encrpt_msg');
+        $signature=Request::instance()->param('signature');
+        $util=new MsgSignatureUtil();
+        $signature2=$util->getMsgSignature($token,$timestamp,$nonce,$encrpt_msg);
+        if($signature==$signature){
+            return true;
+        }else{
+            return false;
+        }
     }
 
 
