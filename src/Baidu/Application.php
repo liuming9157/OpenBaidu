@@ -125,8 +125,7 @@ class Application extends Controller
      **/
     public function getAuthCode()
     {
-        $param     = Request::instance()->param();
-        $auth_code = $param->authorization_code;
+        $auth_code     = Request::instance()->param('authorization_code');
         return $auth_code;
 
     }
@@ -174,6 +173,7 @@ class Application extends Controller
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData  = json_decode($responseData);
         return $responseData;
 
         
@@ -185,27 +185,18 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function getMpInfo()
+    public function getMpInfo($mpToken)
     {
-        $access_token=$this->getMpToken();
-        $client = new Client([
-            'base_uri' => $this->base_uri,
-        ]);
         //请求百度接口
-        $response = $client->get('/rest/2.0/smartapp/app/info', [
+        $response = $this->client->get('/rest/2.0/smartapp/app/info', [
             'query' => [
-                'access_token' => $access_token,
+                'access_token' => $mpToken,
 
             ],
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
         $mpInfo       = json_decode($responseData); //对返回信息进行处理
-        $app_id=Db::name('mp_token')->where('access_token',$access_token)->where('type','baidu')->value('app_id');
-        if(!$app_id){
-            $app_id=$mpInfo->app_id;
-           Db::name('mp_token')->where('access_token',$access_token)->where('type','baidu')->update(['app_id'=>$app_id]); 
-        }
         return $mpInfo; //具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
 
     }
@@ -218,21 +209,16 @@ class Application extends Controller
      * @return string
      * @author
      **/
-    public function uploadCode($template_id,$ext_json,$user_version,$user_desc)
+    public function uploadCode($mpToken,$template_id,$ext_json,$user_version,$user_desc)
     {
-        $client = new Client([
-            'base_uri' => $this->base_uri,
-        ]);
         //请求百度接口
-        $response = $client->post('/rest/2.0/smartapp/package/upload', [
+        $response = $this->client->post('/rest/2.0/smartapp/package/upload', [
             'data' => [
-                'access_token' => $this->getMpToken(),
+                'access_token' => $mpToken,
                 'template_id'=>$template_id,//模板ID
                 'ext_json'=>$ext_json,//自定义配置
                 'user_version'=>$user_version,//代码版本号
                 'user_desc'=>$user_desc//代码描述
-
-
 
             ],
 
@@ -250,15 +236,13 @@ class Application extends Controller
      * @return string
      * @author
      **/
-    public function submitAudit($package_id,$content='',$remark='')
+    public function submitAudit($mpToken,$package_id,$content='',$remark='')
     {
-        $client = new Client([
-            'base_uri' => $this->base_uri,
-        ]);
+        
         //请求百度接口
-        $response = $client->post('/rest/2.0/smartapp/package/submitaudit', [
+        $response = $this->client->post('/rest/2.0/smartapp/package/submitaudit', [
             'data' => [
-                'access_token' => $this->getMpToken(),
+                'access_token' => $mpToken,
                 'package_id'=>$package_id,//包ID
                 'content'=>$content,//送审描述
                 'remark'=>$remark,//送审备注
@@ -276,15 +260,12 @@ class Application extends Controller
      * @return string
      * @author
      **/
-    public function releaseCode($package_id)
+    public function releaseCode($mpToken,$package_id)
     {
-        $client = new Client([
-            'base_uri' => $this->base_uri,
-        ]);
         //请求百度接口
-        $response = $client->post('/rest/2.0/smartapp/package/release', [
+        $response = $this->client->post('/rest/2.0/smartapp/package/release', [
             'data' => [
-                'access_token' => $this->getMpToken(),
+                'access_token' => $mpToken,
                 'package_id'=>$package_id,//包ID
             ],
 
@@ -300,15 +281,12 @@ class Application extends Controller
      * @return string
      * @author
      **/
-    public function modifyDomain()
+    public function modifyDomain($mpToken)
     {
-        $client = new Client([
-            'base_uri' => $this->base_uri,
-        ]);
         //请求百度接口
-        $response = $client->post('/rest/2.0/smartapp/app/modifydomain', [
+        $response = $this->client->post('/rest/2.0/smartapp/app/modifydomain', [
             'data' => [
-                'access_token' => $this->getMpToken(),
+                'access_token' => $mpToken,
             ],
 
         ]);
