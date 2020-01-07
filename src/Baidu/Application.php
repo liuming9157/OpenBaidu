@@ -49,7 +49,7 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function getTicket()
+    public function ticket()
     {
         $encrypt      = Cache::get('baiduTicket'); //获取缓存中的加密信息
         $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
@@ -69,7 +69,7 @@ class Application extends Controller
             $response = $this->client->get('/public/2.0/smartapp/auth/tp/token', [
                 'query' => [
                     'client_id' => $this->client_id,
-                    'ticket'    => $this->getTicket(),
+                    'ticket'    => $this->ticket(),
 
                 ],
 
@@ -91,7 +91,7 @@ class Application extends Controller
      * @return $pre_auth_code
      * @author
      **/
-    public function getPreAuthCode($tpToken)
+    public function preAuthCode($tpToken)
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
@@ -111,10 +111,11 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function goAuthPage($tpToken='')
+    public function jump($tpToken)
     {
 
-        header( 'Location:https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->getPreAuthCode($tpToken));
+        $url='https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->preAuthCode($tpToken);
+        echo "<script language='javascript' type='text/javascript'>window.location.href = '$url'</script>";
 
     }
     /**
@@ -123,27 +124,56 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function getAuthCode()
+    public function authCode()
     {
         $auth_code     = Request::instance()->param('authorization_code');
         return $auth_code;
 
     }
     /**
-     * 从百度服务器获取授权小程序AccessToken及RefreshToken
+     * 找回授权码,丢失refresh_token时使用
+     * @param tpToken string
+     * @param appid string
+     * @return auth_code string
+     * @author
+     **/
+    public function findAuthCode($tpToken,$appid)
+    {//请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/auth/retrieve/authorizationcode', [
+            'query' => [
+                'access_token' => $tpToken,
+                'app_id'         => $appid,
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData=json_decode($responseData);
+        if($responseData->errno==0){
+            $auth_code=$responseData->data->authorization_code;
+            return $auth_code;
+        }else{
+            throw new Exception($responseData->msg, 1);
+            
+        }
+        
+
+    }
+    /**
+     * 授权时或丢失refresh_token时调用，从百度服务器获取授权小程序AccessToken及RefreshToken
      * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
      * @param tpToken
+     * @param authCode
      * @return object(acces_token,refresh_token,expires_in)
      * @author
      **/
-    public function mpToken($tpToken='')
+    public function mpToken($tpToken,$authCode)
     {
        
         //请求百度接口
         $response = $this->client->get('/rest/2.0/oauth/token', [
             'query' => [
                 'access_token' => $tpToken,
-                'code'         => $this->getAuthCode(),
+                'code'         => $authCode,
                 'grant_type'   => 'app_to_tp_authorization_code',
             ],
 
@@ -157,16 +187,17 @@ class Application extends Controller
      * 刷新授权小程序AccessToken
      * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
      * @param refresh_token
+     * @param tp_token
      * @return object(access_token,refresh_token)
      * @author
      **/
-    public function refreshMpToken($refresh_token='')
+    public function refreshToken($refresh_token,$tpToken)
     {
       
         //请求百度接口
         $response = $this->client->get('/rest/2.0/oauth/token', [
             'query' => [
-                'access_token' => $this->getTpToken(),
+                'access_token' => $tpToken,
                 'refresh_token'         => $refresh_token,
                 'grant_type'   => 'app_to_tp_refresh_token',
             ],
@@ -181,11 +212,11 @@ class Application extends Controller
 
     /**
      * 获取小程序基础信息
-     *
-     * @return void
+     * @param $mpToken string
+     * @return mpInfo object
      * @author
      **/
-    public function getMpInfo($mpToken)
+    public function mpInfo($mpToken)
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/app/info', [
@@ -202,6 +233,7 @@ class Application extends Controller
     }
      /**
      * 上传小程序代码
+     * @param $mpToken string
      * @param $template_id int
      * @param $ext_json string
      * @param $user_version string
@@ -230,6 +262,7 @@ class Application extends Controller
     }
      /**
      * 提交审核
+     * @param $mpToken string
      * @param $package_id string
      * @param $content string
      * @param $remark string
@@ -256,6 +289,7 @@ class Application extends Controller
     }
      /**
      * 发布代码
+    * @param $mpToken string
      * @param $package_id string
      * @return string
      * @author
@@ -277,7 +311,7 @@ class Application extends Controller
     }
      /**
      * 修改服务器域名，直接调用此接口，可自动修改授权小程序服务器域名
-     * @param $access_token
+     * @param $mpToken
      * @return string
      * @author
      **/

@@ -13,16 +13,15 @@ protected $config=[
 	'debug'=>true//生产模式时请设置为false,并且按照文档添加数据库
      ];
 
-$app=new App($this->config);
+$app=new Application($this->config);
 $app->serve();接收服务器推送时间返回success,如果是ticket则缓存ticket
-$app->getTicket();//解密并获取ticket
-$app->getTpToken();//获取第三方平台的AccessToken
-$app->getPreAuthCode();//获取预授权码
-$app->goAuthPage();//前往授权页；
-$app->getAuthCode();//获取授权码;  
-$app->refreshMpToken();//刷新授权小程序的AccessToken;
-$app->getMpToken();//获取授权小程序的AccessToken;
-$app->getMpInfo();//获取授权小程序的信息
+
+$app->tpToken();//获取第三方平台的AccessToken
+$app->auCode();
+$app->jump();//前往授权页；
+$app->refreshToken();//刷新授权小程序的AccessToken;
+$app->mpToken();//获取授权小程序的AccessToken;
+$app->mpInfo();//获取授权小程序的信息
 ```
 
 **注意**
@@ -40,18 +39,19 @@ $app->getMpInfo();//获取授权小程序的信息
   
 tp_token数据表字段如下；
 1. id int(10)   
-2. token varchar(50) 
-3. create_time int(10)  
+2. token varchar(150) 
+3. update_time int(10)  
 4. expires _in int(10)
-5. type varchat(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
+5. type varchar(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
 
 mp_token数据表字段如下：
 1. id int(10)   
-2. access_token varchar(50)  
-3. refresh_token varchar(50)  
-4. create_time int(10)  
+2. access_token varchar(150)  
+3. refresh_token varchar(150)  
+4. update_time int(10)  
 5. expires _in int(10)
-6. type varchat(50) 可选值：'weixin','baidu','ali','douyin','QQ'
+6. type varchar(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
+7. appid varchar(50)
 ### 关于代码提交功能接口的使用说明
 代码提交时，需要调用以下三个接口  
 1. 代码上传 `$app->uploadCode()`  
