@@ -264,6 +264,27 @@ class Application extends Controller
 
     }
      /**
+     * 查询代码包
+     * @param $mpToken string
+     * @return object
+     * @author
+     **/
+    public function package($mpToken)
+    {
+        
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/package/get', [
+            'query' => [
+                'access_token' => $mpToken
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData      = json_decode($responseData); //对返回信息进行处理
+        return $responseData; //
+
+    }
+     /**
      * 提交审核
      * @param $mpToken string
      * @param $package_id string
