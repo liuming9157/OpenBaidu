@@ -8,32 +8,28 @@ use think\Db;
 use think\Request;
 use think\Cache;
 
-class Template
+class BasicInfo
 {
-    private $encodingAesKey = ''; //第三方平台AesKey
-    private $client_id      = ''; //第三方平台appsecret;
-    private $redirect_uri   = ''; //授权后回调URI;
+    
     private $token          = '';//消息验证token
     private $base_uri       = 'https://openapi.baidu.com/'; //百度接口基础URI
     private $client;
 
     public function __construct($config = [])
     {
-        $this->encodingAesKey = $config['encodingAesKey'];
-        $this->client_id      = $config['client_id'];
-        $this->redirect_uri   = $config['redirect_uri'];
+        
         $this->token          = $config['token'];
         $this->client         = new Client([
                 'base_uri' => $this->base_uri,
             ]);
     }
     /**
-     * 获取加密Ticket并缓存10分钟
+     * 获取小程序全类目
      *
      * @return void
      * @author
      **/
-    public function serve()
+    public function categoryList()
     {
         if(Request::instance()->isPost()){
             $baiduTicket=Request::instance()->post('Encrypt');
@@ -46,12 +42,12 @@ class Template
     }
 
     /**
-     * 解密并获取Ticket
+     * 修改小程序类目
      *
      * @return void
      * @author
      **/
-    public function ticket()
+    public function categoryUpdate()
     {
         $encrypt      = Cache::get('baiduTicket'); //获取缓存中的加密信息
         $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
@@ -60,13 +56,13 @@ class Template
         return $ticket;
     }
     /**
-     * 直接从百度服务器获取第三方平台AccessToken
+     * 修改小程序icon
      * @param client_id 
      * @param ticket
      * @return token 
      * @author
      **/
-    public function tpToken(){
+    public function modifyHeadIcon(){
         if(Cache::get('baiduTpToken')==null){
                 //请求百度接口
                 $response = $this->client->get('/public/2.0/smartapp/auth/tp/token', [
@@ -93,12 +89,12 @@ class Template
    
   
     /**
-     * 获取预授权码pre_auth_code
+     * 修改功能介绍
      * @param toToken
      * @return $pre_auth_code
      * @author
      **/
-    public function preAuthCode()
+    public function modifySignature()
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
@@ -113,12 +109,12 @@ class Template
         return $pre_auth_code;
     }
     /**
-     * 跳转到授权页
+     * 暂停服务
      * @param tpToken 
      * @return void
      * @author
      **/
-    public function jumpToAuth()
+    public function pause()
     {
 
         $url='https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->preAuthCode();
@@ -126,25 +122,25 @@ class Template
 
     }
     /**
-     * 获取授权码
+     * 开启服务
      *
      * @return string
      * @author
      **/
-    public function authCode()
+    public function resume()
     {
         $auth_code     = Request::instance()->param('authorization_code');
         return $auth_code;
 
     }
     /**
-     * 找回授权码,丢失refresh_token时使用
+     * 申请恢复流量下线
      * @param tpToken string
      * @param appid string
      * @return auth_code string
      * @author
      **/
-    public function findAuthCode($appid)
+    public function applyRecovery($appid)
     {
        
         //请求百度接口
@@ -168,13 +164,12 @@ class Template
 
     }
     /**
-     * 授权时或丢失refresh_token时调用，从百度服务器获取授权小程序AccessToken及RefreshToken
-     * 注意：小程序AccessToken(有效期1小时)和第三方平台AccessToken(有效期1个月)是不一样的,
+     * 二维码
      * @param authCode
      * @return object(acces_token,refresh_token,expires_in)
      * @author
      **/
-    public function mpToken($authCode='')
+    public function qrcode($authCode='')
     {
        
         $authCode=empty($authCode)?$this->authCode():$authCode;
@@ -194,14 +189,13 @@ class Template
 
     }
      /**
-     * 刷新授权小程序AccessToken
-     * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
+     * 修改小程序名称
      * @param refresh_token
      * @param tp_token
      * @return object(access_token,refresh_token)
      * @author
      **/
-    public function refreshToken($refresh_token)
+    public function setNickname($refresh_token)
     {
       
         //请求百度接口
@@ -221,12 +215,12 @@ class Template
     }
 
     /**
-     * 获取小程序基础信息
+     * 设置最低基础版本库
      * @param $mpToken string
      * @return mpInfo object
      * @author
      **/
-    public function mpInfo($mpToken)
+    public function setSupportVersion($mpToken)
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/app/info', [
@@ -242,14 +236,14 @@ class Template
 
     }
     /**
-     * 获取模板列表
+     * 查询最低基础版本库
      * @param mpToken
      * @param page
      * @param page_size
      * @return object
      * @author 
      **/
-    public function templateList($mpToken,$page=1,$page_size=10)
+    public function getSupportVersion($mpToken,$page=1,$page_size=10)
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/template/gettemplatelist', [
@@ -266,13 +260,13 @@ class Template
         return $templateList;
     }
     /**
-     * 删除模板
+     * 设置小程序服务器域名
      * @param mpToken
      * @param template_id
      * @return object
      * @author 
      **/
-    public function delTemplate($mpToken,$template_id)
+    public function modifyDomain($mpToken,$template_id)
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/template/deltemplate', [
@@ -288,14 +282,14 @@ class Template
         return $responseData->msg;
     }
     /**
-     * 获取草稿列表
+     * 设置小程序业务域名
      * @param mpToken
      * @param page
      * @param page_size
      * @return object
      * @author 
      **/
-    public function draftList($mpToken,$page=1,$page_size=10)
+    public function modifyWebviewDomain($mpToken,$page=1,$page_size=10)
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/template/getdraftlist', [
@@ -312,14 +306,14 @@ class Template
         return $draftList;
     }
     /**
-     * 获取草稿至模板
+     * 小程序名称检测
      * @param mpToken
      * @param draft_id
      * @param user_desc
      * @return object
      * @author 
      **/
-    public function addTemplate($mpToken,$draft_id,$user_desc)
+    public function checkName($mpToken,$draft_id,$user_desc)
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/template/gettemplatelist', [
@@ -337,7 +331,7 @@ class Template
     }
 
      /**
-     * 上传小程序代码
+     * 基本信息强制下线后修改基本信息
      * @param $mpToken string
      * @param $template_id int
      * @param $ext_json string
@@ -346,7 +340,7 @@ class Template
      * @return string
      * @author
      **/
-    public function uploadCode($mpToken,$template_id,$ext_json,$user_version,$user_desc)
+    public function update($mpToken,$template_id,$ext_json,$user_version,$user_desc)
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/upload', [
@@ -365,169 +359,7 @@ class Template
         return $data->msg; 
 
     }
-     /**
-     * 查询代码包
-     * @param $mpToken string
-     * @return object
-     * @author
-     **/
-    public function package($mpToken)
-    {
-        
-        //请求百度接口
-        $response = $this->client->get('/rest/2.0/smartapp/package/get', [
-            'query' => [
-                'access_token' => $mpToken
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $responseData      = json_decode($responseData); //对返回信息进行处理
-        return $responseData; //
-
-    }
-     /**
-     * 提交审核
-     * @param $mpToken string
-     * @param $package_id string
-     * @param $content string
-     * @param $remark string
-     * @return string
-     * @author
-     **/
-    public function submitAudit($mpToken,$package_id,$content='',$remark='')
-    {
-        
-        //请求百度接口
-        $response = $this->client->post('/rest/2.0/smartapp/package/submitaudit', [
-            'form_params' => [
-                'access_token' => $mpToken,
-                'package_id'=>$package_id,//包ID
-                'content'=>$content,//送审描述
-                'remark'=>$remark,//送审备注
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $data       = json_decode($responseData); //对返回信息进行处理
-        return $data->msg; //
-
-    }
-     /**
-     * 发布代码
-    * @param $mpToken string
-     * @param $package_id string
-     * @return string
-     * @author
-     **/
-    public function releaseCode($mpToken,$package_id)
-    {
-        //请求百度接口
-        $response = $this->client->post('/rest/2.0/smartapp/package/release', [
-            'form_params' => [
-                'access_token' => $mpToken,
-                'package_id'=>$package_id,//包ID
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $data       = json_decode($responseData); //对返回信息进行处理
-        return $data->msg; //
-
-    }
-     /**
-     * 修改服务器域名，直接调用此接口，可自动修改授权小程序服务器域名
-     * @param $mpToken
-     * @return string
-     * @author
-     **/
-    public function modifyDomain($mpToken)
-    {
-        //请求百度接口
-        $response = $this->client->post('/rest/2.0/smartapp/app/modifydomain', [
-            'form_params' => [
-                'access_token' => $mpToken,
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $data       = json_decode($responseData); //对返回信息进行处理
-        return $data->msg; //
-
-    }
-    /**
-     * 获取二维码图片
-     * @param $mpToken
-     * @param $package_id
-     * @return string
-     * @author
-     **/
-    public function qrcode($mpToken,$package_id='',$size=200)
-    {
-        //请求百度接口
-        $response = $this->client->get('/rest/2.0/smartapp/app/qrcode', [
-            'query' => [
-                'access_token' => $mpToken,
-                'package_id'   => $package_id,
-                'size'         => $size        
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $data       = json_decode($responseData); //对返回信息进行处理
-        return $data->msg; //
-
-    }
-    /**
-     * 申请手机号权限
-     * @param $mpToken
-     * @param $reason int
-     * @param $used_scene int
-     * @param $scene_desc string
-     * @param $scene_demo string 图片链接地址，需调用图片上传接口获取
-     * @return success string
-     * @author
-     **/
-    public function mobile($mpToken,$reason=0,$used_scene=0,$scene_desc='test',$scene_demo='')
-    {
-        //请求百度接口
-        $response = $this->client->post('/rest/2.0/smartapp/app/apply/mobileauth', [
-            'form_params' => [
-                'access_token' => $mpToken,
-                'reason'       => $reason,
-                'used_scene'   => $used_scene,
-                'scene_desc'   => $scene_desc,
-                'scene_demo'   =>$scene_demo     
-            ],
-
-        ]);
-        $responseData = $response->getBody()->getContents(); //百度返回信息
-        $data       = json_decode($responseData); //对返回信息进行处理
-        return $data->msg; //
-
-    }
-
-    /**
-     * 验证签名
-     *
-     * @return boleen
-     * @author 
-     **/
-    public function check()
-    {
-        $token=$this->token;
-        $timestamp=Request::instance()->param('timestamp');
-        $nonce=Request::instance()->param('nonce');
-        $encrpt_msg=Request::instance()->param('encrpt_msg');
-        $signature=Request::instance()->param('signature');
-        $util=new MsgSignatureUtil();
-        $signature2=$util->getMsgSignature($token,$timestamp,$nonce,$encrpt_msg);
-        if($signature==$signature){
-            return true;
-        }else{
-            return false;
-        }
-    }
+    
 
 
 }
