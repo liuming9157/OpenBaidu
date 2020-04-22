@@ -1,5 +1,5 @@
 <?php
-namespace Openplatform\Baidu;
+namespace Openplatform\Baidu\util;
 use Exception;
 /**
  * Copyright (C) 2018 Baidu, Inc. All Rights Reserved.

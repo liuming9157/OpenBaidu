@@ -1,15 +1,14 @@
 <?php
 namespace Openplatform\Baidu;
 
-use Openplatform\Baidu\AesDecryptUtil;
-use Openplatform\Baidu\MsgSignatureUtil;
+
 use GuzzleHttp\Client;
 use think\Controller;
 use think\Db;
 use think\Request;
 use think\Cache;
 
-class Application extends Controller
+class Template
 {
     private $encodingAesKey = ''; //第三方平台AesKey
     private $client_id      = ''; //第三方平台appsecret;
@@ -68,23 +67,28 @@ class Application extends Controller
      * @author
      **/
     public function tpToken(){
-            //请求百度接口
-            $response = $this->client->get('/public/2.0/smartapp/auth/tp/token', [
+        if(Cache::get('baiduTpToken')==null){
+                //请求百度接口
+                $response = $this->client->get('/public/2.0/smartapp/auth/tp/token', [
                 'query' => [
                     'client_id' => $this->client_id,
                     'ticket'    => $this->ticket(),
 
                 ],
 
-            ]);
-            $responseData = $response->getBody()->getContents(); //百度返回信息
-            $responseData = json_decode($responseData);
-            if ($responseData->errno == 0) {
+                ]);
+                $responseData = $response->getBody()->getContents(); //百度返回信息
+                $responseData = json_decode($responseData);
+                if ($responseData->errno == 0) {
                 $token = $responseData->data->access_token; //对返回信息进行处理并获取token
-                return $token;
-            } else {
+                Cache::set('baiduTpToken',$token,2592000);//缓存30天
+                
+                } else {
                 return $resonose->msg;
-            }
+                }
+        }
+        return Cache::get('baiduTpToken');
+            
     }
    
   
@@ -94,12 +98,12 @@ class Application extends Controller
      * @return $pre_auth_code
      * @author
      **/
-    public function preAuthCode($tpToken)
+    public function preAuthCode()
     {
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/tp/createpreauthcode', [
             'query' => [
-                'access_token' => $tpToken,
+                'access_token' => $this->tpToken(),
 
             ],
 
@@ -114,17 +118,17 @@ class Application extends Controller
      * @return void
      * @author
      **/
-    public function jump($tpToken)
+    public function jumpToAuth()
     {
 
-        $url='https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->preAuthCode($tpToken);
+        $url='https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->preAuthCode();
         echo "<script language='javascript' type='text/javascript'>window.location.href = '$url'</script>";
 
     }
     /**
      * 获取授权码
      *
-     * @return void
+     * @return string
      * @author
      **/
     public function authCode()
@@ -140,11 +144,13 @@ class Application extends Controller
      * @return auth_code string
      * @author
      **/
-    public function findAuthCode($tpToken,$appid)
-    {//请求百度接口
+    public function findAuthCode($appid)
+    {
+       
+        //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/auth/retrieve/authorizationcode', [
             'query' => [
-                'access_token' => $tpToken,
+                'access_token' => $this->tpToken(),
                 'app_id'         => $appid,
             ],
 
@@ -163,26 +169,27 @@ class Application extends Controller
     }
     /**
      * 授权时或丢失refresh_token时调用，从百度服务器获取授权小程序AccessToken及RefreshToken
-     * 注意：小程序AccessToken和第三方平台AccessToken是不一样的
-     * @param tpToken
+     * 注意：小程序AccessToken(有效期1小时)和第三方平台AccessToken(有效期1个月)是不一样的,
      * @param authCode
      * @return object(acces_token,refresh_token,expires_in)
      * @author
      **/
-    public function mpToken($tpToken,$authCode)
+    public function mpToken($authCode='')
     {
        
+        $authCode=empty($authCode)?$this->authCode():$authCode;
         //请求百度接口
         $response = $this->client->get('/rest/2.0/oauth/token', [
             'query' => [
-                'access_token' => $tpToken,
+                'access_token' => $this->tpToken(),
                 'code'         => $authCode,
                 'grant_type'   => 'app_to_tp_authorization_code',
             ],
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
-        $responseData=json_decode($responseData);
+        $responseData=json_decode($responseData,true);//建议将此处的返回数据存入数据库
+
         return $responseData;
 
     }
@@ -194,20 +201,20 @@ class Application extends Controller
      * @return object(access_token,refresh_token)
      * @author
      **/
-    public function refreshToken($refresh_token,$tpToken)
+    public function refreshToken($refresh_token)
     {
       
         //请求百度接口
         $response = $this->client->get('/rest/2.0/oauth/token', [
             'query' => [
-                'access_token' => $tpToken,
+                'access_token' => $this->tpToken(),
                 'refresh_token'         => $refresh_token,
                 'grant_type'   => 'app_to_tp_refresh_token',
             ],
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
-        $responseData  = json_decode($responseData);
+        $responseData  = json_decode($responseData，true);
         return $responseData;
 
         

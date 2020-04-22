@@ -1,5 +1,5 @@
 {
-    "name": "jackliu/openplatform",
+    "name": "jackliu/openbaidu",
     "description": "the miniprogram openplatform SDK",
     "type": "library",
     "require": {
@@ -17,7 +17,7 @@
     "minimum-stability": "stable",
     "autoload":{
         "psr-4": {
-            "Openplatform\\": "src/"
+            "OpenBaidu\\": "src/"
         }
     }
 }

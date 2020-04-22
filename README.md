@@ -1,8 +1,35 @@
-### 小程序第三方平台SDK  
-含百度、微信第三方平台
+### 百度小程序第三方平台SDK  
+
  
 ### 使用方法
 参照`exmaple\Index.php`中写法
+
+### 项目结构
+初始的目录结构如下：
+
+~~~
+OpenBaidu  
+├─src           应用目录
+│  ├─Application        核心类库
+│  ├─library            模块目录
+│  │  ├─BasicInfo       基础信息设置
+│  │  ├─CustomMessage   客服消息
+│  │  ├─Domain          域名设置
+│  │  ├─Image           图片上传
+│  │  ├─Login           小程序登陆
+│  │  ├─Order           订单管理
+│  │  ├─Package         代码包管理
+│  │  ├─Pay             支付
+│  │  ├─Statistic       数据统计
+│  │  ├─Template        代码模板
+│  │  └─TemplateMessage 模板消息
+│  │
+│  └─util               工具目录
+│
+├─example               示例目录（对外访问目录）
+   └─index.php          示例写法
+
+~~~
 
 ### 方法介绍  
 ```
@@ -14,28 +41,28 @@ protected $config=[
      ];
 
 $app=new Application($this->config);
-$app->serve();接收服务器推送时间返回success,如果是ticket则缓存ticket
-
-$app->tpToken();//获取第三方平台的AccessToken
-$app->auCode();
-$app->jump();//前往授权页；
+$app->serve();接收服务器推送时返回success，并缓存
+$app->ticket();解密获取ticket
+$app->tpToken();//获取第三方平台的AccessToken并缓存
+$app->preAuthCode();获取预授权码
+$app->jumpToAuth();//前往授权页；
+$app->authCode();//获取授权码，一般在回调页调用
 $app->refreshToken();//刷新授权小程序的AccessToken;
-$app->mpToken();//获取授权小程序的AccessToken;
+$app->mpToken();//获取授权小程序的AccessToken;存入数据库
 $app->mpInfo();//获取授权小程序的信息
 ```
 
 **注意**
-以上各方法根据自己需要调用。事实上，在实际开发中，真正需要开发者调用的方法只需要四个（参照例子写法）：  
-一是接收ticket并缓存,需调用`serve()`方法  
-二是获取第三方平台令牌并保存，调用tpToken方法     
-三是用户点击授权按钮时，跳转到授权页，此时调用`goAuthPage()`方法，调用此方法时需传入第三方平台的access_token,建议开发者将此令牌存入数据库; 
-四是在授权回调页获取小程序aceess_token并保存，此时在跳转回调页内调用`mpToken()`方法，  
-`注意：此方法返回的不是access_token，而是一个对象，该对象包含了access_token/refresh_token/expires_in`  
+以上各方法根据自己需要调用。事实上，在实际开发中，真正需要开发者调用的方法只需要san个（参照例子写法）：  
+一是接收ticket并缓存,需调用`serve()`方法      
+二是用户点击授权按钮时，跳转到授权页，此时调用`jumpToAuthPage()`方法;   
+三是在授权回调页获取小程序aceess_token并保存，此时在跳转回调页内调用`mpToken()`方法，  
+`注意：此方法返回的不是access_token，而是一个数组，该数组包含了access_token/refresh_token/expires_in`，建议存入数据库    
 
 ### 对access_token的处理
 1. 开发者一定要注意，第三方平台有一个access_token,授权小程序也有一个access_token,这两个access_token不一样，为了区分，代码中一般用tpToken表示第三方平台令牌，用mpToken表示小程序令牌。
-2. tpToken有效期为1个月，mpToken有效期为1小时。建议开发者把这两个令牌都存入数据库，每次调用时先从数据库查询，而不是从百度和微信服务器获取。  
-3. 我的做法提供给大家参考，tpToken一般是剩下不足一天时再使用ticket刷新，mpToken是过期后使用refreshToken刷新  
+2. tpToken有效期为1个月，mpToken有效期为1小时。tpToken本框架已经做了处理，开发者不需关注，建议开发者把mpToken令牌都存入数据库，每次调用时先从数据库查询，而不是从百度和微信服务器获取。  
+3. 我的做法提供给大家参考，mpToken是过期后使用refreshToken刷新  
   
 tp_token数据表字段如下；
 1. id int(10)   
