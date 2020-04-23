@@ -243,9 +243,9 @@ class Application extends Controller
 
     }
     public function __call($method,$args){
-        $method='OpenBaidu\\library\\'.$method;
+        $method='OpenBaidu\\library\\'.ucfirst($method);
         if(class_exists($method)){
-            return new $method($args);
+            return new $method(...$args);
         }
         throw new Exception('Class not exists');
     }
