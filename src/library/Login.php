@@ -10,19 +10,15 @@ use think\Cache;
 
 class Login
 {
-    private $encodingAesKey = ''; //第三方平台AesKey
-    private $client_id      = ''; //第三方平台appsecret;
-    private $redirect_uri   = ''; //授权后回调URI;
-    private $token          = '';//消息验证token
+   
     private $base_uri       = 'https://openapi.baidu.com/'; //百度接口基础URI
     private $client;
+    private $mpToken;
 
-    public function __construct($config = [])
+    public function __construct($mpToken='')
     {
-        $this->encodingAesKey = $config['encodingAesKey'];
-        $this->client_id      = $config['client_id'];
-        $this->redirect_uri   = $config['redirect_uri'];
-        $this->token          = $config['token'];
+        
+        $this->mpToken          = $mpToken;
         $this->client         = new Client([
                 'base_uri' => $this->base_uri,
             ]);
@@ -33,8 +29,22 @@ class Login
      * @return void
      * @author 
      **/
-    function session()
+    
+    public function session($code)
     {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/oauth/getsessionkeybycode', [
+            'query' => [
+                'access_token' => $this->mpToken,
+                'code'=>$code,
+                'grant_type'=>'authorization_code'
+
+            ],
+
+        ]);
+        $responseData  = $response->getBody()->getContents(); //百度返回信息
+        $responseData = json_decode($responseData); //对返回信息进行处理并获取token
+        return $responseData;
     }
     /**
      * 获取unionid
@@ -42,8 +52,19 @@ class Login
      * @return void
      * @author 
      **/
-    function unionid()
+    function unionid($openid)
     {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/unionId/get', [
+            'query' => [
+                'access_token' => $this->mpToken,
+                'open_id' => $openid
+            ],
+
+        ]);
+        $responseData  = $response->getBody()->getContents(); //百度返回信息
+        $unionid = json_decode($responseData)->data->union_id; //对返回信息进行处理并获取token
+        return $uionid;
     }
     
 }

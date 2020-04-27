@@ -64,14 +64,10 @@ $app->mpInfo();//获取授权小程序的信息
 ### 对access_token的处理
 1. 开发者一定要注意，第三方平台有一个access_token,授权小程序也有一个access_token,这两个access_token不一样，为了区分，代码中一般用tpToken表示第三方平台令牌，用mpToken表示小程序令牌。
 2. tpToken有效期为1个月，mpToken有效期为1小时。tpToken本框架已经做了处理，开发者不需关注，建议开发者把mpToken令牌都存入数据库，每次调用时先从数据库查询，而不是从百度和微信服务器获取。  
-3. 我的做法提供给大家参考，mpToken是过期后使用refreshToken刷新  
+3. mpToken是否过期需要大家自行判断，如果过期使用refreshToken刷新  
+以下是建议的数据表设计：  
   
-tp_token数据表字段如下；
-1. id int(10)   
-2. token varchar(150) 
-3. update_time int(10)  
-4. expires _in int(10)
-5. type varchar(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
+
 
 mp_token数据表字段如下：
 1. id int(10)   
@@ -81,6 +77,8 @@ mp_token数据表字段如下：
 5. expires _in int(10)
 6. type varchar(50) 可选值：'weixin','baidu','ali','douyin','QQ'  
 7. appid varchar(50)
+8. app_name  varchar(100)
+9. photo_addr varchar(500)
 ### 关于代码提交功能接口的使用说明
 代码提交时，需要调用以下三个接口  
 1. 代码上传 `$app->uploadCode()`  

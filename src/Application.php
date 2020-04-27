@@ -4,12 +4,10 @@ namespace OpenBaidu;
 use OpenBaidu\util\AesDecryptUtil;
 use OpenBaidu\util\MsgSignatureUtil;
 use GuzzleHttp\Client;
-use think\Controller;
-use think\Db;
 use think\Request;
 use think\Cache;
 
-class Application extends Controller
+class Application
 {
     private $encodingAesKey = ''; //第三方平台AesKey
     private $client_id      = ''; //第三方平台appsecret;
@@ -37,8 +35,11 @@ class Application extends Controller
     public function serve()
     {
         if(Request::instance()->isPost()){
-            $baiduTicket=Request::instance()->post('Encrypt');
-            Cache::set('baiduTicket',$baiduTicket,600);
+            $encrypt=Request::instance()->post('Encrypt');
+            $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
+            $decryptData = $decryptUtil->decrypt($encrypt); //对数据解密
+            $ticket       = json_decode($decryptData)->Ticket; //获取ticket
+            Cache::set('baiduTicket',$ticket,600);
         }
         return 'success';
         
@@ -46,22 +47,9 @@ class Application extends Controller
         
     }
 
+    
     /**
-     * 解密并获取Ticket
-     *
-     * @return void
-     * @author
-     **/
-    public function ticket()
-    {
-        $encrypt      = Cache::get('baiduTicket'); //获取缓存中的加密信息
-        $decryptUtil = new AesDecryptUtil($this->encodingAesKey); //解密工具
-        $decryptData = $decryptUtil->decrypt($encrypt); //对数据解密
-        $ticket       = json_decode($decryptData)->Ticket; //获取ticket
-        return $ticket;
-    }
-    /**
-     * 直接从百度服务器获取第三方平台AccessToken
+     * 获取第三方平台AccessToken
      * @param client_id 
      * @param ticket
      * @return token 
@@ -73,7 +61,7 @@ class Application extends Controller
                 $response = $this->client->get('/public/2.0/smartapp/auth/tp/token', [
                 'query' => [
                     'client_id' => $this->client_id,
-                    'ticket'    => $this->ticket(),
+                    'ticket'    => Cache::get('baiduTicket'),
 
                 ],
 
@@ -95,7 +83,6 @@ class Application extends Controller
   
     /**
      * 获取预授权码pre_auth_code
-     * @param toToken
      * @return $pre_auth_code
      * @author
      **/
@@ -115,11 +102,10 @@ class Application extends Controller
     }
     /**
      * 跳转到授权页
-     * @param tpToken 
      * @return void
      * @author
      **/
-    public function jumpToAuth()
+    public function jumpToAuthPage()
     {
 
         $url='https://smartprogram.baidu.com/mappconsole/tp/authorization?client_id=' . $this->client_id . '&redirect_uri=' . $this->redirect_uri . '&pre_auth_code=' . $this->preAuthCode();
@@ -238,10 +224,128 @@ class Application extends Controller
 
         ]);
         $responseData = $response->getBody()->getContents(); //百度返回信息
-        $mpInfo       = json_decode($responseData); //对返回信息进行处理
+        $mpInfo       = json_decode($responseData,true); //对返回信息进行处理,建议存入数据库
         return $mpInfo; //具体字段可参考文档https://smartprogram.baidu.com/docs/develop/third/pro/
 
     }
+    /**
+     * 获取模板列表
+     * @param page
+     * @param page_size
+     * @return object
+     * @author 
+     **/
+    public function templateList($page=1,$page_size=10)
+    {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/template/gettemplatelist', [
+            'query' => [
+                'access_token' => $this->tpToken(),
+                'page'         =>$page,
+                'page_size'    =>$page_size
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $templateList       = json_decode($responseData,true); //对返回信息进行处理
+        return $templateList;
+    }
+    /**
+     * 删除模板
+     * @param mpToken
+     * @param template_id
+     * @return object
+     * @author 
+     **/
+    public function delTemplate($template_id)
+    {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/template/deltemplate', [
+            'form_params' => [
+                'access_token' => $this->tpToken(),
+                'template_id'  =>$template_id,
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData       = json_decode($responseData); //对返回信息进行处理
+        return $responseData->msg;
+    }
+    /**
+     * 获取草稿列表
+     * @param mpToken
+     * @param page
+     * @param page_size
+     * @return object
+     * @author 
+     **/
+    public function draftList($page=1,$page_size=10)
+    {
+        //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/template/getdraftlist', [
+            'query' => [
+                'access_token' => $this->tpToken(),
+                'page'         =>$page,
+                'page_size'    =>$page_size
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $draftList       = json_decode($responseData); //对返回信息进行处理
+        return $draftList;
+    }
+    /**
+     * 获取草稿至模板
+     * @param mpToken
+     * @param draft_id
+     * @param user_desc
+     * @return object
+     * @author 
+     **/
+    public function addTemplate($draft_id,$user_desc)
+    {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/template/gettemplatelist', [
+            'form_params' => [
+                'access_token' => $this->tpToken(),
+                'draft_id'         =>$draft_id,
+                'user_desc'    =>$user_desc
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $template_id       = json_decode($responseData)->data->template_id; //对返回信息进行处理
+        return $template_id;
+    }
+    /**
+     * 图片上传
+     * @param tpToken
+     * @param multipartFile
+     * @param type
+     * @return object
+     * @author 
+     **/
+    public function uploadImage($multipartFile='jpg',$type='')
+    {
+        //请求百度接口
+        $response = $this->client->post('/file/2.0/smartapp/upload/image ', [
+            'form_params' => [
+                'access_token' => $this->tpToken(),
+                'multipartFile'=>$multipartFile,
+                'type'    =>$type
+
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $image_url = json_decode($responseData)->data; //对返回信息进行处理
+        return $image_url;
+    }
+
     public function __call($method,$args){
         $method='OpenBaidu\\library\\'.ucfirst($method);
         if(class_exists($method)){

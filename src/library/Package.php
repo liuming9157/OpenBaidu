@@ -10,22 +10,17 @@ use think\Cache;
 
 class Package
 {
-    private $encodingAesKey = ''; //第三方平台AesKey
-    private $client_id      = ''; //第三方平台appsecret;
-    private $redirect_uri   = ''; //授权后回调URI;
-    private $token          = '';//消息验证token
+    
     private $base_uri       = 'https://openapi.baidu.com/'; //百度接口基础URI
     private $client;
+    private $mpToken;
 
-    public function __construct($config = [])
+    public function __construct($mpToken)
     {
-        $this->encodingAesKey = $config['encodingAesKey'];
-        $this->client_id      = $config['client_id'];
-        $this->redirect_uri   = $config['redirect_uri'];
-        $this->token          = $config['token'];
         $this->client         = new Client([
                 'base_uri' => $this->base_uri,
             ]);
+        $this->mpToken=$mpToken;
     }
  
 
@@ -39,12 +34,12 @@ class Package
      * @return string
      * @author
      **/
-    public function uploadCode($mpToken,$template_id,$ext_json,$user_version,$user_desc)
+    public function uploadCode($template_id,$ext_json,$user_version,$user_desc)
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/upload', [
             'form_params' => [
-                'access_token' => $mpToken,
+                'access_token' => $this->mpToken,
                 'template_id'=>$template_id,//模板ID
                 'ext_json'=>$ext_json,//自定义配置
                 'user_version'=>$user_version,//代码版本号
@@ -68,13 +63,13 @@ class Package
      * @return string
      * @author
      **/
-    public function submitAudit($mpToken,$package_id,$content='',$remark='')
+    public function submitAudit($package_id,$content='',$remark='')
     {
         
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/submitaudit', [
             'form_params' => [
-                'access_token' => $mpToken,
+                'access_token' => $this->mpToken,
                 'package_id'=>$package_id,//包ID
                 'content'=>$content,//送审描述
                 'remark'=>$remark,//送审备注
@@ -93,12 +88,12 @@ class Package
      * @return string
      * @author
      **/
-    public function releaseCode($mpToken,$package_id)
+    public function releaseCode($package_id)
     {
         //请求百度接口
         $response = $this->client->post('/rest/2.0/smartapp/package/release', [
             'form_params' => [
-                'access_token' => $mpToken,
+                'access_token' => $this->mpToken,
                 'package_id'=>$package_id,//包ID
             ],
 
@@ -114,8 +109,20 @@ class Package
      * @return void
      * @author 
      **/
-    function rollback()
+    function rollback($package_id)
     {
+        //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/package/rollback', [
+            'form_params' => [
+                'access_token' => $this->mpToken,
+                'package_id'=>$package_id,//包ID
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
+
     }
     /**
      * 撤销审核
@@ -125,6 +132,17 @@ class Package
      **/
     function withdraw()
     {
+         //请求百度接口
+        $response = $this->client->post('/rest/2.0/smartapp/package/withdraw', [
+            'form_params' => [
+                'access_token' => $this->mpToken,
+                'package_id'=>$package_id,//包ID
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $data       = json_decode($responseData); //对返回信息进行处理
+        return $data->msg; //
     }
     /**
      * 查询代码包
@@ -132,13 +150,13 @@ class Package
      * @return object
      * @author
      **/
-    public function package($mpToken)
+    public function package()
     {
         
         //请求百度接口
         $response = $this->client->get('/rest/2.0/smartapp/package/get', [
             'query' => [
-                'access_token' => $mpToken
+                'access_token' => $this->mpToken
             ],
 
         ]);
@@ -155,6 +173,17 @@ class Package
      **/
     function getDetail()
     {
+         //请求百度接口
+        $response = $this->client->get('/rest/2.0/smartapp/package/getdetail', [
+            'query' => [
+                'access_token' => $this->mpToken
+            ],
+
+        ]);
+        $responseData = $response->getBody()->getContents(); //百度返回信息
+        $responseData      = json_decode($responseData); //对返回信息进行处理
+        return $responseData; //
+
     }
      /**
      * 修改服务器域名，直接调用此接口，可自动修改授权小程序服务器域名
