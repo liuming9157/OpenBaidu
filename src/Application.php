@@ -27,6 +27,18 @@ class Application
             ]);
     }
     /**
+     * 实例化
+     *
+     * @return void
+     * @author
+     **/
+    public static function instance($config=[])
+    {
+        
+        return new static($config);
+          
+    }
+    /**
      * 获取加密Ticket并缓存10分钟
      *
      * @return void

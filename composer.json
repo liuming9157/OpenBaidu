@@ -1,6 +1,6 @@
 {
     "name": "jackliu/openbaidu",
-    "description": "the miniprogram openplatform SDK",
+    "description": "the baidu miniprogram openplatform SDK",
     "type": "library",
     "require": {
         "php": ">=5.6.0",

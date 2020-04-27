@@ -14,18 +14,7 @@ OpenBaidu
 ├─src           应用目录
 │  ├─Application        核心类库
 │  ├─library            模块目录
-│  │  ├─BasicInfo       基础信息设置
-│  │  ├─CustomMessage   客服消息
-│  │  ├─Domain          域名设置
-│  │  ├─Image           图片上传
-│  │  ├─Login           小程序登陆
-│  │  ├─Order           订单管理
-│  │  ├─Package         代码包管理
-│  │  ├─Pay             支付
-│  │  ├─Statistic       数据统计
-│  │  ├─Template        代码模板
-│  │  └─TemplateMessage 模板消息
-│  │
+│  │  └─Miniapp         授权小程序
 │  └─util               工具目录
 │
 ├─example               示例目录（对外访问目录）
@@ -79,15 +68,20 @@ mp_token数据表字段如下：
 7. appid varchar(50)
 8. app_name  varchar(100)
 9. photo_addr varchar(500)
+
+### 授权后获取实例
+
+`$miniapp=$this->app->miniapp($token)`
+
 ### 关于代码提交功能接口的使用说明
 代码提交时，需要调用以下三个接口  
-1. 代码上传 `$app->uploadCode()`  
+1. 代码上传 `$mimiapp->uploadCode()`  
 此接口需要用户填写三个数据，分别是    
 `$ext_json`第三方配置信息  
 `user_version`代码版本号    
 `user_desc`代码描述  
 还有一个字段由系统获取，为`$template_id`模板ID  
-2. 提交审核`$app->submitAudit()`  
+2. 提交审核`$miniapp->submitAudit()`  
 提交审核后需要等待一天左右，百度会推送审核结果。审核结果的获取，可以参考`https://smartprogram.baidu.com/docs/develop/third/apppage/#%E4%BB%A3%E7%A0%81%E5%AE%A1%E6%A0%B8%E7%8A%B6%E6%80%81%E6%8E%A8%E9%80%81`  
 3. 代码发布`$app->relaseCode()`  
 **在获得授权后，提交代码前，就应该调用修改域名接口`$app->modifyDomain()`来修改小程序的业务域名**

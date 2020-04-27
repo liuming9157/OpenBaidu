@@ -12,6 +12,7 @@ class Index extends Controller{
 	protected $app=null;
 	public function __construct(){
 		$this->app=new Application($config);
+		//$this->app=Application::instance($config);
 	}
 	/**
 	 * 平台接收ticket
